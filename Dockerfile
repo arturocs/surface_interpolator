@@ -6,6 +6,5 @@ RUN apk add --no-cache musl-dev && \
     strip -s /app/target/release/surface_interpolator
 
 FROM gcr.io/distroless/static:latest
-EXPOSE 8080
 COPY --from=build-env /app/target/release/surface_interpolator /
 CMD ["./surface_interpolator"]

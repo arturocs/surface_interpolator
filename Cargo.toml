@@ -16,3 +16,8 @@ codegen-units = 1
 
 [dependencies]
 actix-web = { version = "3.3", features = ["rustls"] }
+async_once = "0.2.1"
+futures = "0.3.19"
+lazy_static = "1.4.0"
+mongodb = "1.2.5"
+serde = { version = "1.0", features = ["derive"] }

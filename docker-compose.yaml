@@ -1,0 +1,28 @@
+version: "3"
+   
+services:
+  rest_api:
+    build: .
+    restart: always
+    volumes:
+      - .:/code
+
+    depends_on:
+      - mongo
+    ports:
+      - 8080:8080
+
+  mongo:
+    image: mongo:4.4
+
+    volumes:
+      - surface_interpolator_db:/data/db
+
+  mongo-express:
+    image: mongo-express
+    ports:
+      - 8081:8081
+    depends_on: 
+      - mongo
+volumes:
+  surface_interpolator_db:
