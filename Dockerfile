@@ -7,4 +7,5 @@ RUN apk add --no-cache musl-dev && \
 
 FROM gcr.io/distroless/static:latest
 COPY --from=build-env /app/target/release/surface_interpolator /
+ENV ROCKET_ADDRESS=0.0.0.0
 CMD ["./surface_interpolator"]

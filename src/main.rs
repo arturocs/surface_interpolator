@@ -1,63 +1,81 @@
-use actix_web::{get, web, App, HttpServer, Responder};
+#[macro_use]
+extern crate rocket;
+use anyhow::Result;
 use async_once::AsyncOnce;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use mongodb::{bson::doc, Client, Collection};
+use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 lazy_static! {
     static ref BOOKS: AsyncOnce<Collection<Book>> = AsyncOnce::new(async {
         let client = Client::with_uri_str("mongodb://mongo:27017").await.unwrap();
         let database = client.database("mydb");
-        database.collection_with_type("books")
+        database.collection::<Book>("books")
     });
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Book {
-    title: String,
-    author: String,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ExtraBookInfo {
+    pages: u16,
+    description: String,
 }
 
-impl Book {
-    fn new(title: impl ToString, author: impl ToString) -> Self {
-        Book {
-            title: title.to_string(),
-            author: author.to_string(),
+impl ExtraBookInfo {
+    fn new(pages: u16, description: impl ToString) -> Self {
+        Self {
+            pages,
+            description: description.to_string(),
         }
     }
 }
 
-#[get("/hello/{name}")]
-async fn hello(web::Path(name): web::Path<String>) -> impl Responder {
-    format!("Hello {}!", name)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct Book {
+    title: String,
+    author: String,
+    extra_info: Option<ExtraBookInfo>,
 }
 
-#[get("/books/{name}")]
-async fn books(web::Path(name): web::Path<String>) -> impl Responder {
+impl Book {
+    fn new(title: impl ToString, author: impl ToString, extra_info: Option<ExtraBookInfo>) -> Self {
+        Book {
+            title: title.to_string(),
+            author: author.to_string(),
+            extra_info,
+        }
+    }
+}
+
+#[get("/<name>")]
+async fn get_books(name: &str) -> Json<Vec<Book>> {
     let cursor = match BOOKS.get().await.find(doc! { "title":name }, None).await {
         Ok(cursor) => cursor,
-        Err(_) => return web::Json(vec![]),
+        Err(_) => return Json(vec![]),
     };
-    let books = cursor.try_collect().await.unwrap_or_else(|_| vec![]);
-    web::Json(books)
+
+    Json(cursor.try_collect().await.unwrap_or_else(|_| vec![]))
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    if BOOKS.get().await.count_documents(None, None).await.unwrap() <= 0 {
+#[rocket::main]
+async fn main() -> Result<()> {
+    if BOOKS.get().await.count_documents(None, None).await? == 0 {
         let docs = vec![
-            Book::new("1984", "George Orwell"),
-            Book::new("Animal Farm", "George Orwell"),
-            Book::new("The Great Gatsby", "F. Scott Fitzgerald"),
+            Book::new("1984", "George Orwell", None),
+            Book::new(
+                "Animal Farm",
+                "George Orwell",
+                Some(ExtraBookInfo::new(112, "The poorly-run Manor Farm near Willingdon, England, is ripened for rebellion...")),
+            ),
+            Book::new("The Great Gatsby", "F. Scott Fitzgerald", None),
         ];
         println!("Inserting books");
-        BOOKS.get().await.insert_many(docs, None).await.unwrap();
+        BOOKS.get().await.insert_many(docs, None).await?;
     }
-    let url = "0.0.0.0:8080";
-    println!("Serving at: {}", url);
-    HttpServer::new(|| App::new().service(hello).service(books))
-        .bind(url)?
-        .run()
-        .await
+
+    rocket::build()
+        .mount("/books", routes![get_books])
+        .launch()
+        .await?;
+    Ok(())
 }

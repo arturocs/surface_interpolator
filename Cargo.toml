@@ -15,9 +15,13 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-actix-web = { version = "3.3", features = ["rustls"] }
 async_once = "0.2.1"
-futures = "0.3.19"
+futures = "0.3"
 lazy_static = "1.4.0"
-mongodb = "1.2.5"
+mongodb = "2.1"
 serde = { version = "1.0", features = ["derive"] }
+anyhow = "1"
+
+[dependencies.rocket]
+version = "0.5.0-rc.1"
+features = ["json"]
