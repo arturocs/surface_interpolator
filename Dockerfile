@@ -5,6 +5,6 @@ RUN apk add --no-cache musl-dev && \
     cargo build --release && \
     strip -s /app/target/release/surface_interpolator
 
-FROM gcr.io/distroless/static:latest
+FROM scratch
 COPY --from=build-env /app/target/release/surface_interpolator /
 CMD ["./surface_interpolator"]
