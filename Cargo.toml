@@ -21,7 +21,5 @@ lazy_static = "1.4.0"
 mongodb = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 anyhow = "1"
-
-[dependencies.rocket]
-version = "0.5.0-rc.1"
-features = ["json"]
+axum = "0.4.3"
+tokio = { version = "1", features = ["full"] }

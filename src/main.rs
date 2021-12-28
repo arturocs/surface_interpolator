@@ -1,12 +1,12 @@
-#[macro_use]
-extern crate rocket;
 use anyhow::Result;
 use async_once::AsyncOnce;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use mongodb::{bson::doc, Client, Collection};
-use rocket::serde::json::Json;
+
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 
 lazy_static! {
     static ref BOOKS: AsyncOnce<Collection<Book>> = AsyncOnce::new(async {
@@ -15,6 +15,7 @@ lazy_static! {
         database.collection::<Book>("books")
     });
 }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct ExtraBookInfo {
     pages: u16,
@@ -47,17 +48,21 @@ impl Book {
     }
 }
 
-#[get("/<name>")]
-async fn get_books(name: &str) -> Json<Vec<Book>> {
-    let cursor = match BOOKS.get().await.find(doc! { "title":name }, None).await {
-        Ok(cursor) => cursor,
-        Err(_) => return Json(vec![]),
-    };
-
-    Json(cursor.try_collect().await.unwrap_or_else(|_| vec![]))
+async fn root() -> &'static str {
+    "Hello, World!"
 }
 
-#[rocket::main]
+async fn get_books(Path(name): Path<String>) -> impl IntoResponse {
+    println!("Recibida petición {}", name);
+    let cursor = match BOOKS.get().await.find(doc! { "title":name }, None).await {
+        Ok(cursor) => cursor,
+        Err(_) => return (StatusCode::OK, Json(vec![])),
+    };
+    let response = cursor.try_collect().await.unwrap_or_else(|_| vec![]);
+    (StatusCode::OK, Json(response))
+}
+
+#[tokio::main]
 async fn main() -> Result<()> {
     if BOOKS.get().await.count_documents(None, None).await? == 0 {
         let docs = vec![
@@ -73,9 +78,13 @@ async fn main() -> Result<()> {
         BOOKS.get().await.insert_many(docs, None).await?;
     }
 
-    rocket::build()
-        .mount("/books", routes![get_books])
-        .launch()
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/books/:name", get(get_books));
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
         .await?;
     Ok(())
 }
