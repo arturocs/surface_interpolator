@@ -1,12 +1,10 @@
 use anyhow::Result;
 use async_once::AsyncOnce;
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use mongodb::{bson::doc, Client, Collection};
-
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 
 lazy_static! {
     static ref BOOKS: AsyncOnce<Collection<Book>> = AsyncOnce::new(async {
@@ -53,7 +51,7 @@ async fn root() -> &'static str {
 }
 
 async fn get_books(Path(name): Path<String>) -> impl IntoResponse {
-    println!("Recibida petición {}", name);
+    println!("received request for book {}", name);
     let cursor = match BOOKS.get().await.find(doc! { "title":name }, None).await {
         Ok(cursor) => cursor,
         Err(_) => return (StatusCode::OK, Json(vec![])),
@@ -82,8 +80,9 @@ async fn main() -> Result<()> {
         .route("/", get(root))
         .route("/books/:name", get(get_books));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    axum::Server::bind(&addr)
+    let address = "0.0.0.0:8000".parse()?;
+    println!("Starting server at {}", address);
+    axum::Server::bind(&address)
         .serve(app.into_make_service())
         .await?;
     Ok(())
