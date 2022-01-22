@@ -64,7 +64,7 @@ async fn books(path: web::Path<String>) -> impl Responder {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    if BOOKS.get().await.count_documents(None, None).await? <= 0 {
+    if BOOKS.get().await.count_documents(None, None).await? == 0 {
         let docs = vec![
             Book::new("1984", "George Orwell", None),
             Book::new(
