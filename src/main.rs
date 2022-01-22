@@ -1,3 +1,5 @@
+mod curves;
+mod surfaces;
 use actix_web::{get, web, App, HttpServer, Responder};
 use async_once::AsyncOnce;
 use futures::TryStreamExt;
