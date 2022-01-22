@@ -1,4 +1,4 @@
-use curves::Point2D;
+use crate::curves::Point2D;
 
 struct Point3D {
     x: f32,
