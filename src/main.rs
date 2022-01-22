@@ -1,6 +1,5 @@
-use anyhow::Result;
+use actix_web::{get, web, App, HttpServer, Responder};
 use async_once::AsyncOnce;
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use mongodb::{bson::doc, Client, Collection};
@@ -46,23 +45,26 @@ impl Book {
     }
 }
 
-async fn root() -> &'static str {
-    "Hello, World!"
+#[get("/hello/{name}")]
+async fn hello(path: web::Path<String>) -> impl Responder {
+    let name = path.into_inner();
+    format!("Hello {}!", name)
 }
 
-async fn get_books(Path(name): Path<String>) -> impl IntoResponse {
-    println!("received request for book {}", name);
+#[get("/books/{name}")]
+async fn books(path: web::Path<String>) -> impl Responder {
+    let name = path.into_inner();
     let cursor = match BOOKS.get().await.find(doc! { "title":name }, None).await {
         Ok(cursor) => cursor,
-        Err(_) => return (StatusCode::OK, Json(vec![])),
+        Err(_) => return web::Json(vec![]),
     };
-    let response = cursor.try_collect().await.unwrap_or_else(|_| vec![]);
-    (StatusCode::OK, Json(response))
+    let books = cursor.try_collect().await.unwrap_or_else(|_| vec![]);
+    web::Json(books)
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    if BOOKS.get().await.count_documents(None, None).await? == 0 {
+async fn main() -> anyhow::Result<()> {
+    if BOOKS.get().await.count_documents(None, None).await? <= 0 {
         let docs = vec![
             Book::new("1984", "George Orwell", None),
             Book::new(
@@ -75,15 +77,11 @@ async fn main() -> Result<()> {
         println!("Inserting books");
         BOOKS.get().await.insert_many(docs, None).await?;
     }
-
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/books/:name", get(get_books));
-
-    let address = "0.0.0.0:8000".parse()?;
-    println!("Starting server at {}", address);
-    axum::Server::bind(&address)
-        .serve(app.into_make_service())
+    let url = "0.0.0.0:8000";
+    println!("Serving at: {}", url);
+    HttpServer::new(|| App::new().service(hello).service(books))
+        .bind(url)?
+        .run()
         .await?;
     Ok(())
 }
