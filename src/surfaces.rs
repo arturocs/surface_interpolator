@@ -1,11 +1,11 @@
-struct 3DPoint {
+struct Point3D {
     x: f32,
     y: f32,
     z: f32
 }
 trait BezierSurface {
-    fn decasteljau_surfaces(points: &[2DPoint]) -> &[2DPoint]
-    fn degree_elevation(points: &[2DPoint], degree: i32) -> &[2DPoint]
-    fn interpolant_surfaces(left: f32, right: f32, step_long: f32, function: String) -> &[3DPoint]
+    fn decasteljau_surfaces(points: &[Point2D]) -> Vec<Point2D>;
+    fn degree_elevation(points: &[Point2D], degree: i32) -> Vec<Point2D>;
+    fn interpolant_surfaces(left: f32, right: f32, step_long: f32, function: String) -> Vec<Point3D>;
     // easy on the surfaces one, there is a lot of things to define first
 }
