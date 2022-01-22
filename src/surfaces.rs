@@ -1,6 +1,6 @@
 use crate::curves::Point2D;
 
-struct Point3D {
+pub struct Point3D {
     x: f32,
     y: f32,
     z: f32,
@@ -12,7 +12,7 @@ trait BezierSurface {
         left: f32,
         right: f32,
         step_long: f32,
-        function: fn(f32) -> f32,
+        function: fn(f32)->f32,
     ) -> Vec<Point3D>;
     // easy on the surfaces one, there is a lot of things to define first
 }
