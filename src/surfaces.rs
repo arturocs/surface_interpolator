@@ -12,7 +12,7 @@ trait BezierSurface {
         left: f32,
         right: f32,
         step_long: f32,
-        function: fn(f32)->f32,
+        function: fn(f32) -> f32,
     ) -> Vec<Point3D>;
     // easy on the surfaces one, there is a lot of things to define first
 }
