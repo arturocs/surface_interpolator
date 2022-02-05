@@ -36,12 +36,10 @@ impl BezierCurve for F2DPoint {
             for i in 1..(degree - j + 1) {
                 let x = Expression::new_var("x");
                 // Expression::new_val() expects a f64 as argument, not a F2DPoint
-                //let first_point = Expression::new_val(points[i - 1]);
-                //let second_point = Expression::new_val(points[i]);
-                let first_point = todo!();
-                let second_point = todo!();
+                let first_point = Expression::new_val(points[i - 1].x as f64);
+                let second_point = Expression::new_val(points[i].x as f64);
                 let one = Expression::new_val(-1.0);
-                let one_minus_x = Expression::new(one, x, core::Actions::Sub);
+                let one_minus_x = Expression::new(one, x.clone(), core::Actions::Sub);
                 let first_monome = Expression::new(first_point, one_minus_x, core::Actions::Mul);
                 let second_monome = Expression::new(second_point, x, core::Actions::Mul);
                 let decasteljau_polynom =
@@ -51,7 +49,7 @@ impl BezierCurve for F2DPoint {
             exp_iteration = curve_degree_j.clone();
             curve_degree_j.clear();
         }
-        return exp_iteration[0].clone();
+        exp_iteration[0].clone()
     }
     fn j_base_element_degree_n(j: i32, n: i32) -> Expression {
         let j_exp = Expression::new_val(j as f64);
@@ -62,9 +60,9 @@ impl BezierCurve for F2DPoint {
         let combinations = Expression::new_val(combinatorics::combinations(n as u64, j as u64));
         let n_minus_j = Expression::new(n_exp, j_exp.clone(), core::Actions::Sub);
         let first_part = Expression::new(combinations, t.pow(j_exp), core::Actions::Mul);
-        let base_polynom =
-            Expression::new(first_part, one_minus_t.pow(n_minus_j), core::Actions::Mul);
-        return base_polynom;
+        // base_polynom =
+        Expression::new(first_part, one_minus_t.pow(n_minus_j), core::Actions::Mul)
+        
     }
 
     fn bernstein_base_curve(points: &[F2DPoint]) -> Expression {
@@ -75,7 +73,7 @@ impl BezierCurve for F2DPoint {
         todo!()
     }
 
-    fn curve_from_function<'a>(
+    fn curve_from_function(
         left: f32,
         right: f32,
         degree: i32,
