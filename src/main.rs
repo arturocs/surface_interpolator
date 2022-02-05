@@ -1,4 +1,4 @@
-#![allow(dead_code,unused_variables)]
+#![allow(dead_code, unused_variables)]
 mod curves;
 mod surfaces;
 use actix_web::{get, web, App, HttpServer, Responder};
