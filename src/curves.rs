@@ -64,7 +64,6 @@ impl BezierCurve for F2DPoint {
         let first_part = Expression::new(combinations, t.pow(j_exp), core::Actions::Mul);
         // base_polynom =
         Expression::new(first_part, one_minus_t.pow(n_minus_j), core::Actions::Mul)
-        
     }
 
     fn bernstein_base_curve(points: &[F2DPoint]) -> Expression {
@@ -75,12 +74,7 @@ impl BezierCurve for F2DPoint {
         todo!()
     }
 
-    fn curve_from_function(
-        left: f32,
-        right: f32,
-        degree: i32,
-        function: String,
-    ) -> Vec<F2DPoint> {
+    fn curve_from_function(left: f32, right: f32, degree: i32, function: String) -> Vec<F2DPoint> {
         todo!()
     }
 
