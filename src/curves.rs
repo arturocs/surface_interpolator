@@ -36,6 +36,8 @@ impl BezierCurve for F2DPoint {
             for i in 1..(degree - j + 1) {
                 let x = Expression::new_var("x");
                 // Expression::new_val() expects a f64 as argument, not a F2DPoint
+                //let first_point = Expression::new_val(points[i - 1]);
+                //let second_point = Expression::new_val(points[i]);
                 let first_point = Expression::new_val(points[i - 1].x as f64);
                 let second_point = Expression::new_val(points[i].x as f64);
                 let one = Expression::new_val(-1.0);
