@@ -5,14 +5,14 @@ use actix_web::{get, web, App, HttpServer, Responder};
 use async_once::AsyncOnce;
 use futures::TryStreamExt;
 use lazy_static::lazy_static;
-use mongodb::{bson::doc, Client, Collection};
+use mongodb::{bson::doc, Client, Database};
 use serde::{Deserialize, Serialize};
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 lazy_static! {
-    static ref BOOKS: AsyncOnce<Collection<Book>> = AsyncOnce::new(async {
+    static ref MYDB: AsyncOnce<Database> = AsyncOnce::new(async {
         let client = Client::with_uri_str("mongodb://mongo:27017").await.unwrap();
         let database = client.database("mydb");
-        database.collection::<Book>("books")
+        database
     });
 }
 
@@ -57,14 +57,25 @@ async fn hello(path: web::Path<String>) -> impl Responder {
 #[get("/books/{name}")]
 async fn books(path: web::Path<String>) -> Result<impl Responder> {
     let name = path.into_inner();
-    let cursor = BOOKS.get().await.find(doc! { "title":name }, None).await?;
+    let cursor = MYDB
+        .get()
+        .await
+        .collection::<Book>("books")
+        .find(doc! { "title":name }, None)
+        .await?;
     let books: Vec<Book> = cursor.try_collect().await?;
     Ok(web::Json(books))
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if BOOKS.get().await.count_documents(None, None).await? == 0 {
+    let n_books = MYDB
+        .get()
+        .await
+        .collection::<Book>("books")
+        .count_documents(None, None)
+        .await?;
+    if n_books == 0 {
         let docs = vec![
             Book::new("1984", "George Orwell", None),
             Book::new(
@@ -75,7 +86,11 @@ async fn main() -> Result<()> {
             Book::new("The Great Gatsby", "F. Scott Fitzgerald", None),
         ];
         println!("Inserting books");
-        BOOKS.get().await.insert_many(docs, None).await?;
+        MYDB.get()
+            .await
+            .collection::<Book>("books")
+            .insert_many(docs, None)
+            .await?;
     }
     let url = "0.0.0.0:8000";
     println!("Serving at: {}", url);
